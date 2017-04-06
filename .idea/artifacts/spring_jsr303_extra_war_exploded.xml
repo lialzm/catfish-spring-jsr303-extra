@@ -1,0 +1,13 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-war" name="spring-jsr303-extra:war exploded">
+    <output-path>$PROJECT_DIR$/out/artifacts/spring_jsr303_extra_war_exploded</output-path>
+    <root id="root">
+      <element id="javaee-facet-resources" facet="spring-jsr303-extra/web/Web" />
+      <element id="directory" name="WEB-INF">
+        <element id="directory" name="classes">
+          <element id="module-output" name="spring-jsr303-extra" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>
