@@ -1,5 +1,6 @@
 package com.catfish.controller;
 
+import com.catfish.annotation.FlowValid;
 import com.catfish.validator.FlowValidator;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.stereotype.Controller;
@@ -13,9 +14,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @Validated
 public class TestController {
 
+
+    @FlowValid({NotEmpty.class})
+    public void abc(){
+
+    }
+
     @RequestMapping("/test")
-    public String test(@NotEmpty String name) {
+    public String test(String name) {
         System.out.println("1111");
+        new FlowValidator().valid();
         return "";
     }
 
