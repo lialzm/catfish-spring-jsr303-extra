@@ -1,11 +1,9 @@
 package com.catfish;
 
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -18,18 +16,19 @@ import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Created by A on 2017/4/7.
+ * Created by A on 2017/4/12.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"classpath:spring-mvc.xml", "classpath:spring-applicationContext.xml"})
 @WebAppConfiguration
-public class TestControllerTest {
-
+public class BaseControllerTest {
 
     private MockMvc mockMvc;
 
@@ -38,17 +37,15 @@ public class TestControllerTest {
 
     @Before
     public void init() {
-        List list1 = new ArrayList();
-        list1.add(new MappingJackson2HttpMessageConverter());
         mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
     }
 
-    private String getForm(String url, Map<String, String> params) throws Exception {
+    public String getForm(String url, Map<String, String> params) throws Exception {
         MockHttpServletRequestBuilder mockHttpServletRequestBuilder = MockMvcRequestBuilders.get(url);
         return getResult(requestForm(mockHttpServletRequestBuilder, params));
     }
 
-    private ResultActions requestForm(MockHttpServletRequestBuilder mockHttpServletRequestBuilder, Map<String, String> params) throws Exception {
+    public ResultActions requestForm(MockHttpServletRequestBuilder mockHttpServletRequestBuilder, Map<String, String> params) throws Exception {
         mockHttpServletRequestBuilder
                 .accept(MediaType.MULTIPART_FORM_DATA)
                 .characterEncoding("UTF-8");
@@ -66,17 +63,10 @@ public class TestControllerTest {
         return ra;
     }
 
-    private String getResult(ResultActions ra) throws Exception {
+    public String getResult(ResultActions ra) throws Exception {
         MvcResult mr = ra.andReturn();
         String result = mr.getResponse().getContentAsString();
         return result;
-    }
-
-    @Test
-    public void test() throws Exception {
-        Map<String,String> map=new HashMap<String, String>();
-        map.put("name","1");
-        getForm("/test.do",map);
     }
 
 }

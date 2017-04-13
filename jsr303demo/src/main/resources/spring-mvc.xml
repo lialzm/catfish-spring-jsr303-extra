@@ -20,6 +20,17 @@ http://www.springframework.org/schema/mvc http://www.springframework.org/schema/
         <property name="providerClass" value="org.hibernate.validator.HibernateValidator"/>
         <!-- 如果不加默认到 使用classpath下的 ValidationMessages.properties -->
         <property name="validationMessageSource" ref="messageSource"/>
+        <property name="validationPropertyMap">
+            <map>
+                <entry key="hibernate.validator.fail_fast" value="true"/>
+            </map>
+        </property>
+    </bean>
+
+    <bean id="localeResolver" class="org.springframework.web.servlet.i18n.CookieLocaleResolver">
+        <property name="cookieName" value="locale"/>
+        <property name="cookieMaxAge" value="-1"/>
+        <property name="defaultLocale" value="zh_CN"/>
     </bean>
 
     <!-- 国际化的消息资源文件（本系统中主要用于显示/错误消息定制） -->
