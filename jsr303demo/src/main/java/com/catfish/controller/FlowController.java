@@ -164,22 +164,7 @@ public class FlowController {
     public String callback() {
         FlowValidator.check(validatorFactory)
                 .on(NotNull.class, new Class[]{Group1.class}, null
-        ).valida(new ValidateCallback() {
-            @Override
-            public void onSuccess(ValidatorElementList validatorElementList) {
-
-            }
-
-            @Override
-            public void onFail(ValidatorElementList validatorElementList, BindingResult errors) {
-                logger.info("errors111==" + errors.getAllErrors().get(0).getDefaultMessage());
-            }
-
-            @Override
-            public void onUncaughtException(Validator validator, Exception e, Object target) throws Exception {
-
-            }
-        }).on(NotNull.class, null).valida(new ValidateCallback() {
+        ).on(NotNull.class, null).valida(new ValidateCallback() {
             @Override
             public void onSuccess(ValidatorElementList validatorElementList) {
 
