@@ -17,4 +17,12 @@ public class HibernateControllerTest extends BaseControllerTest {
 //        Assert.assertEquals("phone电话号码要求11位",result);
     }
 
+    @Test
+    public void testValidaGeneric() throws Exception {
+        Map<String,String> map=new HashMap<String, String>();
+        map.put("test","2018-01-01");
+        String result = getForm("/hibernate/testValidaGeneric.do", map);
+//        Assert.assertEquals("phone电话号码要求11位",result);
+    }
+
 }

@@ -52,10 +52,12 @@ public class FlowControllerTest extends BaseControllerTest {
 
     @Test
     public void testValidaCompose2() throws Exception {
-        Map<String, String> map = new HashMap<String, String>();
-        String result = getForm("/flow/testValidaCompose2.do", map);
-        System.out.println(result);
-        Assert.assertEquals("时间需要是一个过去的时间", result);
+        for (int i=0;i<2;i++){
+            Map<String, String> map = new HashMap<String, String>();
+            String result = getForm("/flow/testValidaCompose2.do", map);
+            System.out.println(result);
+            Assert.assertEquals("时间需要是一个过去的时间", result);
+        }
     }
 
     /**

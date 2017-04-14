@@ -17,9 +17,7 @@ import com.catfish.util.ReflectUtils;
 import org.hibernate.validator.internal.engine.ValidationContext;
 import org.hibernate.validator.internal.engine.ValueContext;
 import org.hibernate.validator.internal.engine.constraintvalidation.ConstraintTree;
-import org.hibernate.validator.internal.engine.constraintvalidation.ConstraintValidatorContextImpl;
 import org.hibernate.validator.internal.engine.constraintvalidation.ConstraintValidatorManager;
-import org.hibernate.validator.internal.engine.constraintvalidation.ConstraintViolationCreationContext;
 import org.hibernate.validator.internal.engine.path.PathImpl;
 import org.hibernate.validator.internal.engine.time.DefaultTimeProvider;
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
@@ -37,8 +35,6 @@ import org.springframework.validation.ObjectError;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import javax.validation.*;
-import javax.validation.constraintvalidation.SupportedValidationTarget;
-import javax.validation.constraintvalidation.ValidationTarget;
 import javax.validation.groups.Default;
 import javax.validation.metadata.ConstraintDescriptor;
 import java.lang.annotation.Annotation;
@@ -48,8 +44,6 @@ import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.*;
-
-import static org.hibernate.validator.internal.util.CollectionHelper.newArrayList;
 
 /**
  * Created by apple on 17/4/6.
@@ -115,22 +109,22 @@ public class FlowValidator {
         validationContext.addConstraintFailures(violations);
     }
 
-    public FlowValidator on(Class<? extends Annotation> annotation, Object values) {
+    public <T> FlowValidator on(Class<? extends Annotation> annotation, T values) {
         on(annotation, new Class[]{Default.class}, "", values);
         return this;
     }
 
-    public FlowValidator on(Class<? extends Annotation> annotation, String name, Object values) {
+    public <T> FlowValidator on(Class<? extends Annotation> annotation, String name, T values) {
         on(annotation, new Class[]{Default.class}, name, values);
         return this;
     }
 
-    public FlowValidator on(Class<? extends Annotation> annotation, Class<?>[] groups, Object values) {
+    public <T> FlowValidator on(Class<? extends Annotation> annotation, Class<?>[] groups, T values) {
         on(annotation, groups, "", values);
         return this;
     }
 
-    public FlowValidator on(Class<? extends Annotation> annotation, Class<?>[] group, String name, Object values) {
+    public <T> FlowValidator on(Class<? extends Annotation> annotation, Class<?>[] group, String name, T values) {
         if (elementListMap.isEmpty()) {
             when(true);
         }
@@ -147,48 +141,37 @@ public class FlowValidator {
      * 获取注解对应annotation
      *
      * @param annotationType
-     * @param groups
      * @return
      */
-    private Annotation getAnnotation(String className, Method[] methods, Class<? extends Annotation> annotationType, Class[] groups) {
+    private Annotation getAnnotation(String className, Method[] methods, Class<? extends Annotation> annotationType, Class group) {
         Annotation an = null;
-        for (Class group :
-                groups) {
-            String cacheKey=getKey(className, Default.class.getSimpleName(), group.getSimpleName());
+        String cacheKey = getKey(className, annotationType.getSimpleName(), group.getSimpleName());
             if (CacheManager.getCacheInfo(cacheKey)!=null){
+                logger.debug("user cache");
                 return (Annotation) CacheManager.getCacheInfo(cacheKey).getValue();
             }
-        }
         for (Method method : methods
                 ) {
             Annotation[] annotations = method.getAnnotationsByType(annotationType);
             for (Annotation annotation : annotations) {
-                final Class<?>[] groupsFromAnnotation = run(
-                        GetAnnotationParameter.action(annotation, ConstraintHelper.GROUPS, Class[].class)
-                );
                 if (annotation instanceof Valid) {
                     return annotation;
                 }
+                final Class<?>[] groupsFromAnnotation = run(
+                        GetAnnotationParameter.action(annotation, ConstraintHelper.GROUPS, Class[].class)
+                );
                 if (groupsFromAnnotation.length == 0) {
-                        for (Class group :
-                                groups) {
-                            if (Default.class.isAssignableFrom(group)) {
-                                String cacheKey=getKey(className, Default.class.getSimpleName(), group.getSimpleName());
+                    if (Default.class.isAssignableFrom(group)) {
                                 CacheManager.putCache(cacheKey, new Cache(cacheKey,annotation,1000,false));
                                 return annotation;
                             }
-                        }
                     } else {
                         for (Class clazz : groupsFromAnnotation
                                 ) {
-                            for (Class group :
-                                    groups) {
-                                String cacheKey=getKey(className,group.getSimpleName(), group.getSimpleName());
                                 CacheManager.putCache(cacheKey, new Cache(cacheKey,annotation,1000,false));
                                 if (clazz.isAssignableFrom(group)) {
                                     return annotation;
                                 }
-                            }
                         }
                     }
 
@@ -196,7 +179,7 @@ public class FlowValidator {
         }
 
         if (an == null) {
-            throw new UnknownAnnotationException("找不到" + annotationType + "(" + Arrays.asList(groups) + ")");
+            throw new UnknownAnnotationException("找不到" + annotationType + "(" + Arrays.asList(group) + ")");
         }
         return an;
     }
@@ -217,7 +200,7 @@ public class FlowValidator {
         return bindingResult;
     }
 
-    public FlowValidator valida(ValidateCallback callback) {
+    public <A extends Annotation, T> FlowValidator valida(ValidateCallback callback) {
         ValidatorElementList<WhenElement> whenElements = flowMetaData.getWhenElementList();
         if (whenElements.isEmpty()) {
             logger.debug("valida isEmpty");
@@ -240,7 +223,7 @@ public class FlowValidator {
                 ConstraintHelper constraintHelper = new ConstraintHelper();
                 ValidationContext validationContext = getValidationContext().forValidateValue(Object.class);
                 String flowValidClassName=flowValidClass.getName();
-                Annotation an = getAnnotation(flowValidClassName, methods, validaElement.getAnnotation(), validaElement.getGroups());
+                Class<? extends Annotation> annotationType = validaElement.getAnnotation();
                 Object value = validaElement.getValues();
                 ValueContext valueContext = ValueContext.getLocalExecutionContext(Object.class, null,
                         PathImpl.createPathFromString(validaElement.getPropertyPath()));
@@ -251,21 +234,23 @@ public class FlowValidator {
                 valueContext.setDeclaredTypeOfValidatedElement(ConstraintLocation.forClass(declaringClass).getTypeForValidatorResolution());
                 valueContext.setCurrentValidatedValue(value);
                 //校验bean
-                if (an instanceof Valid) {
+                if (annotationType.isAssignableFrom(Valid.class)) {
                     validaBean(valueContext, validationContext, validaElement.getGroups());
                 } else {
+                    Annotation an = getAnnotation(flowValidClassName, methods, annotationType, validaElement.getGroups()[0]);
                     ConstraintDescriptorImpl<? extends Annotation> constraintDescriptor = buildConstraintDescriptor(
                             null, an, ElementType.TYPE, constraintHelper);
-                    List<Class<? extends ConstraintValidator>> constraintValidators =
-                            findValidatorClasses(validaElement.getAnnotation(), ValidationTarget.ANNOTATED_ELEMENT, constraintHelper);
+//                    List<Class<? extends ConstraintValidator<A, T>>> constraintValidators = constraintHelper.findValidatorClasses(validaElement.getAnnotation(), ValidationTarget.ANNOTATED_ELEMENT);
+//                    List<Class<? extends ConstraintValidator>> constraintValidators =
+//                            findValidatorClasses(validaElement.getAnnotation(), ValidationTarget.ANNOTATED_ELEMENT, constraintHelper);
                     valueContext.setElementType(constraintDescriptor.getElementType());
                     //基本校验类型
-                    if (constraintValidators.size() > 0) {
-                        validaGeneric(validationContext, constraintDescriptor, constraintValidators, valueContext);
+                   /* if (constraintValidators.size() > 0) {
                     } else {
                         //复合校验类型
                         validaCompose(validationContext, constraintDescriptor, valueContext);
-                    }
+                    }*/
+                    validaGeneric(validationContext, constraintDescriptor, valueContext);
                 }
                 Set<ConstraintViolation> fails = validationContext.getFailingConstraints();
                 Iterator<ConstraintViolation> constraintViolationIterator = fails.iterator();
@@ -296,7 +281,7 @@ public class FlowValidator {
         return this;
     }
 
-    public FlowValidator valida() {
+    public <A extends Annotation, T> FlowValidator valida() {
         return valida(callback);
     }
 
@@ -309,17 +294,29 @@ public class FlowValidator {
         }
     }
 
-    private void validaGeneric(ValidationContext validationContext,
-                               ConstraintDescriptor constraintDescriptor,
-                               List<Class<? extends ConstraintValidator>> constraintValidators, ValueContext valueContext) {
-        ConstraintValidatorContext constraintValidatorContext = new ConstraintValidatorContextImpl(
+    private <A extends Annotation, T> void validaGeneric(ValidationContext validationContext,
+                                                         ConstraintDescriptor constraintDescriptor,
+                                                         ValueContext valueContext) {
+     /*   ConstraintValidatorContext constraintValidatorContext = new ConstraintValidatorContextImpl(
                 validationContext.getParameterNames(),
                 validationContext.getTimeProvider(),
                 valueContext.getPropertyPath(),
                 constraintDescriptor
-        );
-        for (Class<? extends ConstraintValidator> c : constraintValidators
+        );*/
+        ConstraintTree constraintTree = new ConstraintTree<A>((ConstraintDescriptorImpl<A>) constraintDescriptor);
+        boolean isValid = constraintTree.validateConstraints(validationContext, valueContext);
+       /* if (!isValid) {
+            Set<ConstraintViolation> set = new HashSet();
+            String message = constraintValidatorContext.getDefaultConstraintMessageTemplate();
+            ConstraintViolation violation = validationContext.createConstraintViolation(
+                    valueContext, new ConstraintViolationCreationContext(message, valueContext.getPropertyPath()), constraintDescriptor
+            );
+            set.add(violation);
+            validationContext.addConstraintFailures(set);
+        }*/
+       /* for (Class<? extends ConstraintValidator<A, T>> c : constraintValidators
                 ) {
+
             ConstraintValidator constraintValidator = validatorFactory.getConstraintValidatorFactory().getInstance(
                     c
             );
@@ -330,16 +327,8 @@ public class FlowValidator {
             } catch (RuntimeException e) {
                 continue;
             }
-            if (!isValid) {
-                Set<ConstraintViolation> set = new HashSet();
-                String message = constraintValidatorContext.getDefaultConstraintMessageTemplate();
-                ConstraintViolation violation = validationContext.createConstraintViolation(
-                        valueContext, new ConstraintViolationCreationContext(message, valueContext.getPropertyPath()), constraintDescriptor
-                );
-                set.add(violation);
-                validationContext.addConstraintFailures(set);
-            }
-        }
+
+        }*/
     }
 
 
@@ -373,7 +362,7 @@ public class FlowValidator {
         );
     }
 
-    public <A extends Annotation> List<Class<? extends ConstraintValidator>> findValidatorClasses(
+ /*   public <A extends Annotation> List<Class<? extends ConstraintValidator>> findValidatorClasses(
             Class<A> annotationType, ValidationTarget validationTarget, ConstraintHelper constraintHelper) {
         List<Class<? extends ConstraintValidator<A, ?>>> validatorClasses = constraintHelper.getAllValidatorClasses(annotationType);
         List<Class<? extends ConstraintValidator>> matchingValidatorClasses = newArrayList();
@@ -398,7 +387,7 @@ public class FlowValidator {
         }
 
         return Arrays.asList(supportedTargetAnnotation.value()).contains(target);
-    }
+    }*/
 
 
     private <P> P run(PrivilegedAction<P> action) {

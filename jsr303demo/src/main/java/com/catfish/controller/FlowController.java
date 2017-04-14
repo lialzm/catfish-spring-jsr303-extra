@@ -1,5 +1,6 @@
 package com.catfish.controller;
 
+import com.catfish.DefaultValidateCallback;
 import com.catfish.ValidateCallback;
 import com.catfish.ValidatorElementList;
 import com.catfish.annotation.FlowValid;
@@ -133,7 +134,7 @@ public class FlowController {
         }
         // 对 calendar 设置为 date 所定的日期
         calendar.setTime(date);
-        BindingResult bindingResult = FlowValidator.check(validatorFactory).on(Past.class, "时间", calendar).valida().end();
+        BindingResult bindingResult = FlowValidator.check(validatorFactory).on(Past.class, "时间", calendar).<Past,Date>valida(new DefaultValidateCallback()).end();
         if (bindingResult.hasErrors()) {
             ObjectError objectError = bindingResult.getAllErrors().get(0);
             return objectError.getObjectName() + objectError.getDefaultMessage();

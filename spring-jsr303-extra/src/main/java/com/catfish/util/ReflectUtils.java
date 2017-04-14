@@ -5,6 +5,9 @@ package com.catfish.util;
  */
 public class ReflectUtils {
 
+
+    private static final String className="com.catfish.validator.FlowValidator";
+
     /**
      * 获取方法调用类
      */
@@ -15,13 +18,13 @@ public class ReflectUtils {
                 ) {
             String className = ste.getClassName();
             String methodName = ste.getMethodName();
-            if (className.equals("com.catfish.validator.FlowValidator") && methodName.equals("valida")) {
+            if (className.equals(className) && methodName.equals("valida")) {
                 break;
             }
             i++;
         }
         StackTraceElement stackTraceElement = stacks[i + 1];
-        if (stackTraceElement.getClassName().equals("com.catfish.validator.FlowValidator")) {
+        if (stackTraceElement.getClassName().equals(className)) {
             stackTraceElement = stacks[i + 2];
         }
         return stackTraceElement.getClassName();
