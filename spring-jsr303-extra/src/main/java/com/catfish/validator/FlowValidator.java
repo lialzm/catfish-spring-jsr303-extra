@@ -5,6 +5,8 @@ import com.catfish.ValidateCallback;
 import com.catfish.ValidatorElementList;
 import com.catfish.annotation.FlowValid;
 import com.catfish.annotation.NotThreadSafe;
+import com.catfish.cache.Cache;
+import com.catfish.cache.CacheManager;
 import com.catfish.element.FlowMetaData;
 import com.catfish.element.ValidaElement;
 import com.catfish.element.WhenElement;
@@ -148,23 +150,31 @@ public class FlowValidator {
      * @param groups
      * @return
      */
-    private Annotation getAnnotation(Method[] methods, Class<? extends Annotation> annotationType, Class[] groups) {
+    private Annotation getAnnotation(String className, Method[] methods, Class<? extends Annotation> annotationType, Class[] groups) {
         Annotation an = null;
+        for (Class group :
+                groups) {
+            String cacheKey=getKey(className, Default.class.getSimpleName(), group.getSimpleName());
+            if (CacheManager.getCacheInfo(cacheKey)!=null){
+                return (Annotation) CacheManager.getCacheInfo(cacheKey).getValue();
+            }
+        }
         for (Method method : methods
                 ) {
-            Annotation[] annotations = method.getAnnotations();
+            Annotation[] annotations = method.getAnnotationsByType(annotationType);
             for (Annotation annotation : annotations) {
-                if (annotation.annotationType().isAssignableFrom(annotationType)) {
-                    if (annotation instanceof Valid) {
-                        return annotation;
-                    }
-                    final Class<?>[] groupsFromAnnotation = run(
-                            GetAnnotationParameter.action(annotation, ConstraintHelper.GROUPS, Class[].class)
-                    );
-                    if (groupsFromAnnotation.length == 0) {
+                final Class<?>[] groupsFromAnnotation = run(
+                        GetAnnotationParameter.action(annotation, ConstraintHelper.GROUPS, Class[].class)
+                );
+                if (annotation instanceof Valid) {
+                    return annotation;
+                }
+                if (groupsFromAnnotation.length == 0) {
                         for (Class group :
                                 groups) {
                             if (Default.class.isAssignableFrom(group)) {
+                                String cacheKey=getKey(className, Default.class.getSimpleName(), group.getSimpleName());
+                                CacheManager.putCache(cacheKey, new Cache(cacheKey,annotation,1000,false));
                                 return annotation;
                             }
                         }
@@ -173,6 +183,8 @@ public class FlowValidator {
                                 ) {
                             for (Class group :
                                     groups) {
+                                String cacheKey=getKey(className,group.getSimpleName(), group.getSimpleName());
+                                CacheManager.putCache(cacheKey, new Cache(cacheKey,annotation,1000,false));
                                 if (clazz.isAssignableFrom(group)) {
                                     return annotation;
                                 }
@@ -180,7 +192,6 @@ public class FlowValidator {
                         }
                     }
 
-                }
             }
         }
 
@@ -214,7 +225,8 @@ public class FlowValidator {
         }
         long start = System.currentTimeMillis();
         String className = ReflectUtils.getCaller();
-        Method[] methods = getMethods(className);
+        Class flowValidClass = getFlowValidClass(className);
+        Method[] methods = getFlowValidMethods(className);
         Iterator<WhenElement> iterator = whenElements.createIterator();
         while (iterator.hasNext()) {
             WhenElement whenElement = iterator.next();
@@ -227,7 +239,8 @@ public class FlowValidator {
                 ValidaElement validaElement = iterator1.next();
                 ConstraintHelper constraintHelper = new ConstraintHelper();
                 ValidationContext validationContext = getValidationContext().forValidateValue(Object.class);
-                Annotation an = getAnnotation(methods, validaElement.getAnnotation(), validaElement.getGroups());
+                String flowValidClassName=flowValidClass.getName();
+                Annotation an = getAnnotation(flowValidClassName, methods, validaElement.getAnnotation(), validaElement.getGroups());
                 Object value = validaElement.getValues();
                 ValueContext valueContext = ValueContext.getLocalExecutionContext(Object.class, null,
                         PathImpl.createPathFromString(validaElement.getPropertyPath()));
@@ -392,7 +405,7 @@ public class FlowValidator {
         return System.getSecurityManager() != null ? AccessController.doPrivileged(action) : action.run();
     }
 
-    private Method[] getMethods(String className) {
+    private Class<?> getFlowValidClass(String className) {
         FlowValid flowValid = null;
         try {
             flowValid = Class.forName(className).getAnnotation(FlowValid.class);
@@ -402,7 +415,20 @@ public class FlowValidator {
         if (flowValid == null) {
             throw new FlowValidatorRuntimeException("没有找到FlowValid注解");
         }
-        return flowValid.value().getMethods();
+        return flowValid.value();
+    }
+
+    private Method[] getFlowValidMethods(String className) {
+        return getFlowValidClass(className).getMethods();
+    }
+
+    /**
+     * 缓存key生成
+     *
+     * @return
+     */
+    private String getKey(String className, String annotationName, String group) {
+        return className + ":" + annotationName + ":" + group;
     }
 
 }

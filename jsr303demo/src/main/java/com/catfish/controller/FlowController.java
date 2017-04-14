@@ -85,10 +85,10 @@ public class FlowController {
     @ResponseBody
     public String testValidaGeneric2() {
         BindingResult bindingResult = FlowValidator.check(validatorFactory)
-                .on(NotNull.class,  "test", null)
+                .on(NotNull.class, new Class[]{Group1.class}, "test", null)
                 .valida()
                 .end();
-       /* String test=null;
+        String test = null;
         long start = System.currentTimeMillis();
         if (test==null){
             int timeElapsed = (int) (System.currentTimeMillis() - start);
@@ -97,7 +97,7 @@ public class FlowController {
         if (bindingResult.hasErrors()) {
             ObjectError objectError = bindingResult.getAllErrors().get(0);
             return objectError.getDefaultMessage();
-        }*/
+        }
         return "";
     }
 
