@@ -51,7 +51,6 @@ import java.util.*;
 @NotThreadSafe
 public class FlowValidator {
 
-
     private ConstraintValidatorManager constraintValidatorManager;
     private MessageInterpolator messageInterpolator;
     private ConstraintValidatorFactory constraintValidatorFactory;
@@ -240,16 +239,7 @@ public class FlowValidator {
                     Annotation an = getAnnotation(flowValidClassName, methods, annotationType, validaElement.getGroups()[0]);
                     ConstraintDescriptorImpl<? extends Annotation> constraintDescriptor = buildConstraintDescriptor(
                             null, an, ElementType.TYPE, constraintHelper);
-//                    List<Class<? extends ConstraintValidator<A, T>>> constraintValidators = constraintHelper.findValidatorClasses(validaElement.getAnnotation(), ValidationTarget.ANNOTATED_ELEMENT);
-//                    List<Class<? extends ConstraintValidator>> constraintValidators =
-//                            findValidatorClasses(validaElement.getAnnotation(), ValidationTarget.ANNOTATED_ELEMENT, constraintHelper);
                     valueContext.setElementType(constraintDescriptor.getElementType());
-                    //基本校验类型
-                   /* if (constraintValidators.size() > 0) {
-                    } else {
-                        //复合校验类型
-                        validaCompose(validationContext, constraintDescriptor, valueContext);
-                    }*/
                     validaGeneric(validationContext, constraintDescriptor, valueContext);
                 }
                 Set<ConstraintViolation> fails = validationContext.getFailingConstraints();
@@ -262,7 +252,6 @@ public class FlowValidator {
                     ObjectError error = new ObjectError(constraintViolation.getPropertyPath().toString(), buf.toString());
                     bindingResult.addError(error);
                 }
-//                iterator1.remove();
                 if (validationContext.isFailFastModeEnabled()) {
                     break;
                 }
@@ -273,9 +262,6 @@ public class FlowValidator {
         } else {
             callback.onSuccess(whenElements);
         }
-        //还原参数
-//        lastWhen=-1;
-//        elementListMap.clear();
         int timeElapsed = (int) (System.currentTimeMillis() - start);
         logger.debug("耗时:" + timeElapsed);
         return this;
@@ -286,49 +272,12 @@ public class FlowValidator {
     }
 
 
-    private void validaCompose(ValidationContext validationContext, ConstraintDescriptorImpl constraintDescriptor, ValueContext valueContext) {
-        Set<ConstraintDescriptorImpl<?>> composingConstraints = constraintDescriptor.getComposingConstraintImpls();
-        for (ConstraintDescriptorImpl<?> composingDescriptor : composingConstraints) {
-            ConstraintTree<?> treeNode = createConstraintTree(composingDescriptor);
-            treeNode.validateConstraints(validationContext, valueContext);
-        }
-    }
 
     private <A extends Annotation, T> void validaGeneric(ValidationContext validationContext,
                                                          ConstraintDescriptor constraintDescriptor,
                                                          ValueContext valueContext) {
-     /*   ConstraintValidatorContext constraintValidatorContext = new ConstraintValidatorContextImpl(
-                validationContext.getParameterNames(),
-                validationContext.getTimeProvider(),
-                valueContext.getPropertyPath(),
-                constraintDescriptor
-        );*/
         ConstraintTree constraintTree = new ConstraintTree<A>((ConstraintDescriptorImpl<A>) constraintDescriptor);
-        boolean isValid = constraintTree.validateConstraints(validationContext, valueContext);
-       /* if (!isValid) {
-            Set<ConstraintViolation> set = new HashSet();
-            String message = constraintValidatorContext.getDefaultConstraintMessageTemplate();
-            ConstraintViolation violation = validationContext.createConstraintViolation(
-                    valueContext, new ConstraintViolationCreationContext(message, valueContext.getPropertyPath()), constraintDescriptor
-            );
-            set.add(violation);
-            validationContext.addConstraintFailures(set);
-        }*/
-       /* for (Class<? extends ConstraintValidator<A, T>> c : constraintValidators
-                ) {
-
-            ConstraintValidator constraintValidator = validatorFactory.getConstraintValidatorFactory().getInstance(
-                    c
-            );
-            boolean isValid;
-            try {
-                constraintValidator.initialize(constraintDescriptor.getAnnotation());
-                isValid = constraintValidator.isValid(valueContext.getCurrentValidatedValue(), constraintValidatorContext);
-            } catch (RuntimeException e) {
-                continue;
-            }
-
-        }*/
+        constraintTree.validateConstraints(validationContext, valueContext);
     }
 
 
@@ -362,32 +311,6 @@ public class FlowValidator {
         );
     }
 
- /*   public <A extends Annotation> List<Class<? extends ConstraintValidator>> findValidatorClasses(
-            Class<A> annotationType, ValidationTarget validationTarget, ConstraintHelper constraintHelper) {
-        List<Class<? extends ConstraintValidator<A, ?>>> validatorClasses = constraintHelper.getAllValidatorClasses(annotationType);
-        List<Class<? extends ConstraintValidator>> matchingValidatorClasses = newArrayList();
-
-        for (Class<? extends ConstraintValidator<A, ?>> validatorClass : validatorClasses) {
-            if (supportsValidationTarget(validatorClass, validationTarget)) {
-                matchingValidatorClasses.add(validatorClass);
-            }
-        }
-
-        return matchingValidatorClasses;
-    }
-
-    private boolean supportsValidationTarget(Class<? extends ConstraintValidator<?, ?>> validatorClass, ValidationTarget target) {
-        SupportedValidationTarget supportedTargetAnnotation = validatorClass.getAnnotation(
-                SupportedValidationTarget.class
-        );
-
-        //by default constraints target the annotated element
-        if (supportedTargetAnnotation == null) {
-            return target == ValidationTarget.ANNOTATED_ELEMENT;
-        }
-
-        return Arrays.asList(supportedTargetAnnotation.value()).contains(target);
-    }*/
 
 
     private <P> P run(PrivilegedAction<P> action) {
