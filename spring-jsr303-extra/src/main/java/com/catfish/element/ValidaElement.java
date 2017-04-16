@@ -6,17 +6,14 @@ import java.lang.annotation.Annotation;
 /**
  * Created by A on 2017/4/10.
  */
-public class ValidaElement<A extends Annotation> implements Serializable {
+public class ValidaElement<A extends Annotation,T> implements Serializable {
     private String propertyPath;
-    private Object values;
+    private T values;
     private Class<A> annotation;
     private Class<?>[] groups;
 
-    public ValidaElement(Object[] value, Class<A> annotation, Class[] groups) {
-        this("", value, annotation, groups);
-    }
 
-    public ValidaElement(String name, Object values, Class<A> annotation, Class[] groups) {
+    public ValidaElement(String name, T values, Class<A> annotation, Class[] groups) {
         this.propertyPath = name;
         this.values = values;
         this.annotation = annotation;
@@ -39,11 +36,11 @@ public class ValidaElement<A extends Annotation> implements Serializable {
         this.groups = groups;
     }
 
-    public Object getValues() {
+    public T getValues() {
         return values;
     }
 
-    public void setValues(Object values) {
+    public void setValues(T values) {
         this.values = values;
     }
 

@@ -113,8 +113,8 @@ public class FlowValidator {
         return this;
     }
 
-    public <T> FlowValidator on(Class<? extends Annotation> annotation, String name, T values) {
-        on(annotation, new Class[]{Default.class}, name, values);
+    public <T> FlowValidator on(Class<? extends Annotation> annotation, String propertyPath, T values) {
+        on(annotation, new Class[]{Default.class}, propertyPath, values);
         return this;
     }
 
@@ -123,7 +123,7 @@ public class FlowValidator {
         return this;
     }
 
-    public <T> FlowValidator on(Class<? extends Annotation> annotation, Class<?>[] group, String name, T values) {
+    public <T> FlowValidator on(Class<? extends Annotation> annotation, Class<?>[] group, String propertyPath, T values) {
         if (elementListMap.isEmpty()) {
             when(true);
         }
@@ -131,7 +131,7 @@ public class FlowValidator {
         ValidatorElementList<ValidaElement> validaElementValidatorElementList = whenElementValidatorElementList.getElement(lastWhen).getValidatorElements();
         int index = whenElementValidatorElementList.size() - 1;
         whenElementValidatorElementList.getElement(index).getValidatorElements();
-        validaElementValidatorElementList.add(new ValidaElement(name, values, annotation, group));
+        validaElementValidatorElementList.add(new ValidaElement(propertyPath, values, annotation, group));
         flowMetaData.setWhenElementList(whenElementValidatorElementList);
         return this;
     }
@@ -199,7 +199,7 @@ public class FlowValidator {
         return bindingResult;
     }
 
-    public <A extends Annotation, T> FlowValidator valida(ValidateCallback callback) {
+    public  FlowValidator valida(ValidateCallback callback) {
         ValidatorElementList<WhenElement> whenElements = flowMetaData.getWhenElementList();
         if (whenElements.isEmpty()) {
             logger.debug("valida isEmpty");
@@ -267,22 +267,22 @@ public class FlowValidator {
         return this;
     }
 
-    public <A extends Annotation, T> FlowValidator valida() {
+    public  FlowValidator valida() {
         return valida(callback);
     }
 
 
 
-    private <A extends Annotation, T> void validaGeneric(ValidationContext validationContext,
+    private  void validaGeneric(ValidationContext validationContext,
                                                          ConstraintDescriptor constraintDescriptor,
                                                          ValueContext valueContext) {
-        ConstraintTree constraintTree = new ConstraintTree<A>((ConstraintDescriptorImpl<A>) constraintDescriptor);
+        ConstraintTree constraintTree = new ConstraintTree((ConstraintDescriptorImpl) constraintDescriptor);
         constraintTree.validateConstraints(validationContext, valueContext);
     }
 
 
-    private <U extends Annotation> ConstraintTree<U> createConstraintTree(ConstraintDescriptorImpl<U> composingDescriptor) {
-        return new ConstraintTree<U>(composingDescriptor);
+    private  ConstraintTree createConstraintTree(ConstraintDescriptorImpl composingDescriptor) {
+        return new ConstraintTree(composingDescriptor);
     }
 
     private ValidationContext.ValidationContextBuilder getValidationContext() {
